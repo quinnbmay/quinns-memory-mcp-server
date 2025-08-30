@@ -12,7 +12,13 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+// Get API key from environment (will be set by Smithery based on user config)
 const MEM0_API_KEY = process?.env?.MEM0_API_KEY || '';
+
+if (!MEM0_API_KEY) {
+  console.error('Error: MEM0_API_KEY environment variable is required');
+  process.exit(1);
+}
 
 // Initialize mem0ai client
 const memoryClient = new MemoryClient({ apiKey: MEM0_API_KEY });
@@ -35,7 +41,7 @@ const ADD_MEMORY_TOOL: Tool = {
         default: 'quinn_may',
       },
     },
-    required: ['content', 'userId'],
+    required: ['content'],
   },
 };
 
@@ -55,7 +61,7 @@ const SEARCH_MEMORIES_TOOL: Tool = {
         default: 'quinn_may',
       },
     },
-    required: ['query', 'userId'],
+    required: ['query'],
   },
 };
 
@@ -99,7 +105,7 @@ function categorizeContent(content: string): string[] {
 }
 
 // Helper function to add memories
-async function addMemory(content: string, userId: string) {
+async function addMemory(content: string, userId: string = 'quinn_may') {
   try {
     const categories = categorizeContent(content);
     const enhancedContent = `[${categories.join(', ')}] ${content}`;
@@ -116,7 +122,7 @@ async function addMemory(content: string, userId: string) {
 }
 
 // Helper function to search memories
-async function searchMemories(query: string, userId: string) {
+async function searchMemories(query: string, userId: string = 'quinn_may') {
   try {
     const results = await memoryClient.search(query, { user_id: userId });
     return results;
@@ -142,15 +148,15 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       case 'add-memory': {
         const { content, userId = 'quinn_may' } = args as { content: string, userId?: string };
-        await addMemory(content, userId);
+        const success = await addMemory(content, userId);
         return {
           content: [
             {
               type: 'text',
-              text: 'Memory added successfully',
+              text: success ? `Memory added successfully for user ${userId}` : 'Failed to add memory',
             },
           ],
-          isError: false,
+          isError: !success,
         };
       }
       
@@ -165,7 +171,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           content: [
             {
               type: 'text',
-              text: formattedResults || 'No memories found',
+              text: formattedResults || `No memories found for query: "${query}"`,
             },
           ],
           isError: false,
@@ -213,12 +219,13 @@ function safeLog(
 async function main() {
   try {
     console.error('Initializing Quinn\'s Custom Memory MCP Server...');
+    console.error(`Using MEM0_API_KEY: ${MEM0_API_KEY ? 'configured' : 'missing'}`);
     
     const transport = new StdioServerTransport();
     await server.connect(transport);
     
     safeLog('info', 'Quinn\'s Custom Memory MCP Server initialized successfully');
-    console.error('Quinn\'s Custom Memory MCP Server running on stdio - May Marketing SEO Edition');
+    console.error('Quinn\'s Custom Memory MCP Server running - May Marketing SEO Edition');
   } catch (error) {
     console.error('Fatal error running server:', error);
     process.exit(1);
