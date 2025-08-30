@@ -4,22 +4,23 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+
+# Install dependencies including Smithery CLI
+RUN npm install
+
+# Copy source code and config files
+COPY src/ ./src/
 COPY tsconfig.json ./
 COPY tsup.config.ts ./
+COPY smithery.yaml ./
 
-# Install dependencies - use npm install instead of ci for better compatibility
-RUN npm install --production=false
-
-# Copy source code
-COPY src/ ./src/
-
-# Build the application
+# Build the application using Smithery CLI
 RUN npm run build
 
 # Remove dev dependencies after build
 RUN npm prune --production
 
-# Expose port (Smithery will override this)
+# Expose port
 EXPOSE 3000
 
 # Start the server
