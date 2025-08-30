@@ -75,20 +75,22 @@ function categorizeContent(content: string): string[] {
   return categories.length > 0 ? categories : ['general'];
 }
 
-// Smithery CLI export format - stateless version
+// Smithery CLI export format - stateless version with lazy authentication
 export default function({ config }: { config: { mem0ApiKey?: string } }) {
-  const apiKey = config.mem0ApiKey;
-  
-  if (!apiKey) {
-    throw new Error('mem0ApiKey is required in configuration');
-  }
+  const apiKey = config?.mem0ApiKey;
 
-  // Initialize mem0ai client
-  const memoryClient = new MemoryClient({ apiKey });
+  // Helper function to get memory client (validates API key when actually needed)
+  function getMemoryClient(): MemoryClient {
+    if (!apiKey) {
+      throw new Error('Mem0 API key is required. Please configure mem0ApiKey in your connection settings.');
+    }
+    return new MemoryClient({ apiKey });
+  }
 
   // Helper function to add memories
   async function addMemory(content: string, userId: string = 'quinn_may') {
     try {
+      const memoryClient = getMemoryClient(); // API key validated here
       const categories = categorizeContent(content);
       const enhancedContent = `[${categories.join(', ')}] ${content}`;
       
@@ -99,22 +101,23 @@ export default function({ config }: { config: { mem0ApiKey?: string } }) {
       return true;
     } catch (error) {
       console.error('Error adding memory:', error);
-      return false;
+      throw error; // Re-throw to show proper error to user
     }
   }
 
   // Helper function to search memories
   async function searchMemories(query: string, userId: string = 'quinn_may') {
     try {
+      const memoryClient = getMemoryClient(); // API key validated here
       const results = await memoryClient.search(query, { user_id: userId });
       return results;
     } catch (error) {
       console.error('Error searching memories:', error);
-      return [];
+      throw error; // Re-throw to show proper error to user
     }
   }
 
-  // Create server instance
+  // Create server instance (no API key required for this step)
   const server = new Server(
     {
       name: 'memory',
@@ -128,7 +131,7 @@ export default function({ config }: { config: { mem0ApiKey?: string } }) {
     }
   );
 
-  // Register tool handlers
+  // Register tool handlers - tools are listed even without API key
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
     tools: [ADD_MEMORY_TOOL, SEARCH_MEMORIES_TOOL],
   }));
@@ -149,10 +152,10 @@ export default function({ config }: { config: { mem0ApiKey?: string } }) {
             content: [
               {
                 type: 'text',
-                text: success ? `Memory added successfully for user ${userId}` : 'Failed to add memory',
+                text: `Memory added successfully for user ${userId}`,
               },
             ],
-            isError: !success,
+            isError: false,
           };
         }
         
