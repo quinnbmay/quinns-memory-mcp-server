@@ -1,26 +1,12 @@
 #!/usr/bin/env node
 
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
 import {
   Tool,
   CallToolRequestSchema,
   ListToolsRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
 import { MemoryClient } from 'mem0ai';
-import dotenv from 'dotenv';
-import http from 'http';
-import { URL } from 'url';
-
-dotenv.config();
-
-// Parse configuration from query parameters (Smithery passes config this way)
-function parseConfig(req: http.IncomingMessage): { mem0ApiKey?: string } {
-  const url = new URL(req.url || '', `http://${req.headers.host}`);
-  return {
-    mem0ApiKey: url.searchParams.get('mem0ApiKey') || process.env.MEM0_API_KEY || process.env.mem0ApiKey || ''
-  };
-}
 
 // Tool definitions  
 const ADD_MEMORY_TOOL: Tool = {
@@ -89,141 +75,126 @@ function categorizeContent(content: string): string[] {
   return categories.length > 0 ? categories : ['general'];
 }
 
-// Helper function to add memories
-async function addMemory(content: string, userId: string = 'quinn_may', apiKey: string) {
-  try {
-    const client = new MemoryClient({ apiKey });
-    const categories = categorizeContent(content);
-    const enhancedContent = `[${categories.join(', ')}] ${content}`;
-    
-    const messages = [
-      { role: 'user' as const, content: enhancedContent }
-    ];
-    await client.add(messages, { user_id: userId });
-    return true;
-  } catch (error) {
-    console.error('Error adding memory:', error);
-    return false;
+// Smithery CLI export format - stateless version
+export default function({ config }: { config: { mem0ApiKey?: string } }) {
+  const apiKey = config.mem0ApiKey;
+  
+  if (!apiKey) {
+    throw new Error('mem0ApiKey is required in configuration');
   }
-}
 
-// Helper function to search memories
-async function searchMemories(query: string, userId: string = 'quinn_may', apiKey: string) {
-  try {
-    const client = new MemoryClient({ apiKey });
-    const results = await client.search(query, { user_id: userId });
-    return results;
-  } catch (error) {
-    console.error('Error searching memories:', error);
-    return [];
+  // Initialize mem0ai client
+  const memoryClient = new MemoryClient({ apiKey });
+
+  // Helper function to add memories
+  async function addMemory(content: string, userId: string = 'quinn_may') {
+    try {
+      const categories = categorizeContent(content);
+      const enhancedContent = `[${categories.join(', ')}] ${content}`;
+      
+      const messages = [
+        { role: 'user' as const, content: enhancedContent }
+      ];
+      await memoryClient.add(messages, { user_id: userId });
+      return true;
+    } catch (error) {
+      console.error('Error adding memory:', error);
+      return false;
+    }
   }
-}
 
-// Create HTTP server
-const httpServer = http.createServer();
+  // Helper function to search memories
+  async function searchMemories(query: string, userId: string = 'quinn_may') {
+    try {
+      const results = await memoryClient.search(query, { user_id: userId });
+      return results;
+    } catch (error) {
+      console.error('Error searching memories:', error);
+      return [];
+    }
+  }
 
-// Handle MCP connections
-httpServer.on('request', async (req, res) => {
-  if (req.url?.startsWith('/mcp')) {
-    const config = parseConfig(req);
-    
-    // Create server instance for this request
-    const server = new Server(
-      {
-        name: 'memory',
-        version: '0.0.1',
+  // Create server instance
+  const server = new Server(
+    {
+      name: 'memory',
+      version: '0.0.1',
+    },
+    {
+      capabilities: {
+        tools: {},
+        logging: {},
       },
-      {
-        capabilities: {
-          tools: {},
-          logging: {},
-        },
+    }
+  );
+
+  // Register tool handlers
+  server.setRequestHandler(ListToolsRequestSchema, async () => ({
+    tools: [ADD_MEMORY_TOOL, SEARCH_MEMORIES_TOOL],
+  }));
+
+  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    try {
+      const { name, arguments: args } = request.params;
+      
+      if (!args) {
+        throw new Error('No arguments provided');
       }
-    );
-
-    // Register tool handlers with config
-    server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: [ADD_MEMORY_TOOL, SEARCH_MEMORIES_TOOL],
-    }));
-
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
-      try {
-        const { name, arguments: args } = request.params;
-        
-        if (!args) {
-          throw new Error('No arguments provided');
+      
+      switch (name) {
+        case 'add-memory': {
+          const { content, userId = 'quinn_may' } = args as { content: string, userId?: string };
+          const success = await addMemory(content, userId);
+          return {
+            content: [
+              {
+                type: 'text',
+                text: success ? `Memory added successfully for user ${userId}` : 'Failed to add memory',
+              },
+            ],
+            isError: !success,
+          };
         }
         
-        if (!config.mem0ApiKey) {
-          throw new Error('Mem0 API key is required. Please configure mem0ApiKey in your connection settings.');
-        }
-        
-        switch (name) {
-          case 'add-memory': {
-            const { content, userId = 'quinn_may' } = args as { content: string, userId?: string };
-            const success = await addMemory(content, userId, config.mem0ApiKey);
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: success ? `Memory added successfully for user ${userId}` : 'Failed to add memory',
-                },
-              ],
-              isError: !success,
-            };
-          }
+        case 'search-memories': {
+          const { query, userId = 'quinn_may' } = args as { query: string, userId?: string };
+          const results = await searchMemories(query, userId);
+          const formattedResults = results.map((result: any) => 
+            `Memory: ${result.memory}\nRelevance: ${result.score}\n---`
+          ).join('\n');
           
-          case 'search-memories': {
-            const { query, userId = 'quinn_may' } = args as { query: string, userId?: string };
-            const results = await searchMemories(query, userId, config.mem0ApiKey);
-            const formattedResults = results.map((result: any) => 
-              `Memory: ${result.memory}\nRelevance: ${result.score}\n---`
-            ).join('\n');
-            
-            return {
-              content: [
-                {
-                  type: 'text',
-                  text: formattedResults || `No memories found for query: "${query}"`,
-                },
-              ],
-              isError: false,
-            };
-          }
-          
-          default:
-            return {
-              content: [
-                { type: 'text', text: `Unknown tool: ${name}` },
-              ],
-              isError: true,
-            };
+          return {
+            content: [
+              {
+                type: 'text',
+                text: formattedResults || `No memories found for query: "${query}"`,
+              },
+            ],
+            isError: false,
+          };
         }
-      } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-          isError: true,
-        };
+        
+        default:
+          return {
+            content: [
+              { type: 'text', text: `Unknown tool: ${name}` },
+            ],
+            isError: true,
+          };
       }
-    });
+    } catch (error) {
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  });
 
-    // Handle MCP over HTTP
-    const transport = new StreamableHTTPServerTransport(req, res);
-    await server.connect(transport);
-  } else {
-    res.statusCode = 404;
-    res.end('Not found');
-  }
-});
-
-// Start server
-const PORT = process.env.PORT || 3000;
-httpServer.listen(PORT, () => {
-  console.error(`Quinn's Custom Memory MCP Server running on port ${PORT}`);
-  console.error('Endpoint: /mcp');
-});
+  // Return the server instance (Smithery CLI will handle transport)
+  return server;
+}
