@@ -23,5 +23,5 @@ RUN npm prune --production
 # Expose port
 EXPOSE 3000
 
-# Start the server
-CMD ["node", "dist/index.js"]
+# Start the HTTP server version
+CMD ["node", "dist/server.js"]
