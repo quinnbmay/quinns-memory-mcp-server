@@ -1,17 +1,17 @@
 {
   "name": "@quinn/memory-mcp-server",
   "version": "0.0.1",
-  "main": "dist/index.js",
-  "module": "./src/index.ts",
+  "main": "dist/server.js",
+  "module": "./src/server.ts",
   "type": "module",
   "bin": {
-    "memory-mcp": "dist/index.js"
+    "memory-mcp": "dist/server.js"
   },
   "scripts": {
     "build": "npx @smithery/cli build",
     "clean": "rm -rf dist",
     "dev": "npx @smithery/cli dev",
-    "start": "node dist/index.js"
+    "start": "node dist/server.js"
   },
   "files": [
     "dist"
