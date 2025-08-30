@@ -12,18 +12,23 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-// Get API key from environment (will be set by Smithery based on user config)
-const MEM0_API_KEY = process?.env?.MEM0_API_KEY || '';
+// Get API key from environment or process arguments (Smithery passes via query params)
+let MEM0_API_KEY = process?.env?.MEM0_API_KEY || process?.env?.mem0ApiKey || '';
 
+// For Smithery deployment, API key might be passed differently
 if (!MEM0_API_KEY) {
-  console.error('Error: MEM0_API_KEY environment variable is required');
-  process.exit(1);
+  // Check if running in Smithery environment with query parameter parsing
+  const args = process.argv;
+  const mem0KeyArg = args.find(arg => arg.includes('mem0ApiKey'));
+  if (mem0KeyArg) {
+    MEM0_API_KEY = mem0KeyArg.split('=')[1];
+  }
 }
 
-// Initialize mem0ai client
-const memoryClient = new MemoryClient({ apiKey: MEM0_API_KEY });
+// Initialize mem0ai client (will validate API key)
+let memoryClient: MemoryClient | null = null;
 
-// Tool definitions
+// Tool definitions  
 const ADD_MEMORY_TOOL: Tool = {
   name: 'add-memory',
   description:
@@ -104,16 +109,28 @@ function categorizeContent(content: string): string[] {
   return categories.length > 0 ? categories : ['general'];
 }
 
+// Helper function to initialize memory client lazily
+function getMemoryClient(): MemoryClient {
+  if (!memoryClient) {
+    if (!MEM0_API_KEY) {
+      throw new Error('Mem0 API key is required. Please configure mem0ApiKey in your Smithery settings.');
+    }
+    memoryClient = new MemoryClient({ apiKey: MEM0_API_KEY });
+  }
+  return memoryClient;
+}
+
 // Helper function to add memories
 async function addMemory(content: string, userId: string = 'quinn_may') {
   try {
+    const client = getMemoryClient();
     const categories = categorizeContent(content);
     const enhancedContent = `[${categories.join(', ')}] ${content}`;
     
     const messages = [
       { role: 'user' as const, content: enhancedContent }
     ];
-    await memoryClient.add(messages, { user_id: userId });
+    await client.add(messages, { user_id: userId });
     return true;
   } catch (error) {
     console.error('Error adding memory:', error);
@@ -124,7 +141,8 @@ async function addMemory(content: string, userId: string = 'quinn_may') {
 // Helper function to search memories
 async function searchMemories(query: string, userId: string = 'quinn_may') {
   try {
-    const results = await memoryClient.search(query, { user_id: userId });
+    const client = getMemoryClient();
+    const results = await client.search(query, { user_id: userId });
     return results;
   } catch (error) {
     console.error('Error searching memories:', error);
@@ -204,10 +222,8 @@ function safeLog(
   level: 'error' | 'debug' | 'info' | 'notice' | 'warning' | 'critical' | 'alert' | 'emergency',
   data: any
 ): void {
-  // For stdio transport, log to stderr to avoid protocol interference
   console.error(`[${level}] ${typeof data === 'object' ? JSON.stringify(data) : data}`);
   
-  // Send to logging capability if available
   try {
     server.sendLoggingMessage({ level, data });
   } catch (error) {
@@ -219,7 +235,8 @@ function safeLog(
 async function main() {
   try {
     console.error('Initializing Quinn\'s Custom Memory MCP Server...');
-    console.error(`Using MEM0_API_KEY: ${MEM0_API_KEY ? 'configured' : 'missing'}`);
+    console.error(`API Key Status: ${MEM0_API_KEY ? 'configured' : 'missing'}`);
+    console.error(`Environment: ${JSON.stringify(process.env, null, 2)}`);
     
     const transport = new StdioServerTransport();
     await server.connect(transport);
