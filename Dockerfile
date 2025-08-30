@@ -23,5 +23,5 @@ RUN npm prune --production
 # Expose port
 EXPOSE 3000
 
-# Start the HTTP server version
-CMD ["node", "dist/server.js"]
+# Start the server using Smithery CLI output location
+CMD ["node", ".smithery/index.cjs"]
