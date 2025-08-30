@@ -1,21 +1,17 @@
-# Smithery configuration file: https://smithery.ai/docs/build/project-config
-
 startCommand:
   type: stdio
   commandFunction: |
-    (config) => ({ 
-      command: "node", 
-      args: ["dist/index.js"], 
-      env: { MEM0_API_KEY: config.mem0ApiKey } 
+    (config) => ({
+      command: "node",
+      args: ["dist/index.js"],
+      env: { MEM0_API_KEY: config.mem0ApiKey }
     })
   configSchema:
-    type: "object"
-    required:
-      - "mem0ApiKey"
+    type: object
+    required: [mem0ApiKey]
     properties:
       mem0ApiKey:
-        type: "string"
+        type: string
         description: "Mem0 API key"
-        title: "Mem0 API Key"
   exampleConfig:
     mem0ApiKey: "m0-your_mem0_api_key_here"
