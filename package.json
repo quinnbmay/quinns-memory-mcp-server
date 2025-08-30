@@ -1,13 +1,13 @@
 {
   "name": "@quinn/memory-mcp-server",
   "version": "0.0.1",
-  "main": "index.js",
+  "main": "dist/index.js",
   "type": "module",
   "bin": {
     "memory-mcp": "dist/index.js"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
     "clean": "rm -rf dist",
     "dev": "tsup --watch",
     "start": "node dist/index.js"
@@ -23,9 +23,11 @@
     "mem0",
     "memory",
     "ai",
-    "agents"
+    "agents",
+    "quinn",
+    "may-marketing"
   ],
-  "author": "",
+  "author": "Quinn May <quinn@maymarketingseo.com>",
   "license": "ISC",
   "description": "Quinn's Custom Memory MCP Server - Personalized memory management for May Marketing SEO workflow",
   "dependencies": {
