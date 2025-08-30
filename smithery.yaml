@@ -1,17 +1,3 @@
-startCommand:
-  type: stdio
-  commandFunction: |
-    (config) => ({
-      command: "node",
-      args: ["dist/index.js"],
-      env: { MEM0_API_KEY: config.mem0ApiKey }
-    })
-  configSchema:
-    type: object
-    required: [mem0ApiKey]
-    properties:
-      mem0ApiKey:
-        type: string
-        description: "Mem0 API key"
-  exampleConfig:
-    mem0ApiKey: "m0-your_mem0_api_key_here"
+runtime: "typescript"
+env:
+  NODE_ENV: "production"
