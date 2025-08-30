@@ -1,4 +1,7 @@
-runtime: "typescript"
+runtime: "container"
+build:
+  dockerfile: "Dockerfile"
+  dockerBuildPath: "."
 startCommand:
   type: "http"
   configSchema:
@@ -11,5 +14,3 @@ startCommand:
         description: "Your Mem0 API key from app.mem0.ai/dashboard/api-keys"
   exampleConfig:
     mem0ApiKey: "m0-your_mem0_api_key_here"
-env:
-  NODE_ENV: "production"
