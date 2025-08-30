@@ -2,18 +2,20 @@
 
 startCommand:
   type: stdio
-  commandFunction:
-    # A JS function that produces the CLI command based on the given config to start the MCP on stdio.
-    |-
-    (config) => ({ command: "node", args: ["dist/index.js"], env: { MEM0_API_KEY: config.mem0ApiKey } })
+  commandFunction: |
+    (config) => ({ 
+      command: "node", 
+      args: ["dist/index.js"], 
+      env: { MEM0_API_KEY: config.mem0ApiKey } 
+    })
   configSchema:
-    # JSON Schema defining the configuration options for the MCP.
-    type: object
+    type: "object"
     required:
-      - mem0ApiKey
+      - "mem0ApiKey"
     properties:
       mem0ApiKey:
-        type: string
-        description: Mem0 API key
+        type: "string"
+        description: "Mem0 API key"
+        title: "Mem0 API Key"
   exampleConfig:
-    mem0ApiKey: your_mem0_api_key_here
+    mem0ApiKey: "m0-your_mem0_api_key_here"
