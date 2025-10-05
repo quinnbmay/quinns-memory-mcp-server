@@ -1,4 +1,4 @@
-FROM node:18-alpine
+FROM node:20-alpine
 
 WORKDIR /app
 
@@ -15,7 +15,7 @@ COPY tsup.config.ts ./
 COPY smithery.yaml ./
 
 # Build the application using Smithery CLI
-RUN npm run build
+RUN npm run build && ls -la .smithery
 
 # Remove dev dependencies after build
 RUN npm prune --production
