@@ -6,7 +6,7 @@ A personalized Model Context Protocol (MCP) server that provides memory storage 
 
 ## Features
 
-- 🧠 **Personalized Memory**: Defaults to Quinn's userId (`quinn_may`)
+- 🧠 **Personalized Memory**: Defaults to Quinn's userId (`quinn`)
 - 🏷️ **Auto-Categorization**: 9 custom categories for May Marketing SEO workflow
 - 🔍 **Smart Search**: Relevance-scored memory retrieval
 - 🎯 **Client-Focused**: Tracks client work, AI projects, SEO content
@@ -37,7 +37,7 @@ npm start
 ### Environment Variables
 
 ```bash
-MEM0_API_KEY=your_mem0_api_key_here
+MEM0_API_KEY=your_memo_api_key_here
 ```
 
 ## Available Tools
@@ -50,7 +50,7 @@ Automatically categorizes and stores memories with Quinn's custom categories.
   "name": "add-memory",
   "arguments": {
     "content": "Completed SEO optimization for Cowboy Property blog posts",
-    "userId": "quinn_may"
+    "userId": "quinn"
   }
 }
 ```
@@ -63,7 +63,7 @@ Search through categorized memories with relevance scoring.
   "name": "search-memories",
   "arguments": {
     "query": "cowboy property seo work",
-    "userId": "quinn_may"
+    "userId": "quinn"
   }
 }
 ```
