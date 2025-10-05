@@ -26,6 +26,14 @@ A personalized Model Context Protocol (MCP) server that provides memory storage 
 
 ## Installation
 
+### Installing via Smithery
+
+To install Memory automatically via [Smithery](https://smithery.ai/server/@quinn/memory):
+
+```bash
+npx -y @smithery/cli install @quinn/memory
+```
+
 ### Local Usage
 
 ```bash
