@@ -4,11 +4,14 @@
   "main": "dist/server.js",
   "module": "./src/server.ts",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "memory-mcp": "dist/server.js"
   },
   "scripts": {
-    "build": "npx @smithery/cli build",
+    "build": "npx @smithery/cli build src/server.ts",
     "clean": "rm -rf dist",
     "dev": "npx @smithery/cli dev",
     "start": "node dist/server.js"
