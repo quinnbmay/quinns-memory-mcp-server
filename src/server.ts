@@ -22,8 +22,8 @@ const ADD_MEMORY_TOOL: Tool = {
       },
       userId: {
         type: 'string',
-        description: "User ID for memory storage. Defaults to 'quinn_may' if not provided.",
-        default: 'quinn_may',
+        description: "User ID for memory storage. Defaults to 'quinn' if not provided.",
+        default: 'quinn',
       },
     },
     required: ['content'],
@@ -42,8 +42,8 @@ const SEARCH_MEMORIES_TOOL: Tool = {
       },
       userId: {
         type: 'string',
-        description: "User ID for memory storage. Defaults to 'quinn_may' if not provided.",
-        default: 'quinn_may',
+        description: "User ID for memory storage. Defaults to 'quinn'.",
+        default: 'quinn',
       },
     },
     required: ['query'],
@@ -54,7 +54,7 @@ const SEARCH_MEMORIES_TOOL: Tool = {
 const MEMORY_CATEGORIES = {
   lifestyle_management_concerns: /daily routines|habits|hobbies|cooking|time management|work-life balance/i,
   daily_tracking: /daily work|left off|session|accomplished|today|yesterday/i,
-  clients: /may marketing|cowboy property|flyers edge|woods roofing|pave worx|client|project/i,
+  clients: /may marketing|cowboy property|flyers edge|woods roofing|client|project/i,
   ai_projects: /ai automation|bot development|notion database|ai project|automation/i,
   seo_content: /seo|blog post|google my business|keyword|content generation|ranking/i,
   billing_payments: /payment|invoice|subscription|billing|financial|monthly fee/i,
@@ -88,7 +88,7 @@ export default function({ config }: { config: { mem0ApiKey?: string } }) {
   }
 
   // Helper function to add memories
-  async function addMemory(content: string, userId: string = 'quinn_may') {
+  async function addMemory(content: string, userId: string = 'quinn') {
     try {
       const memoryClient = getMemoryClient(); // API key validated here
       const categories = categorizeContent(content);
@@ -106,7 +106,7 @@ export default function({ config }: { config: { mem0ApiKey?: string } }) {
   }
 
   // Helper function to search memories
-  async function searchMemories(query: string, userId: string = 'quinn_may') {
+  async function searchMemories(query: string, userId: string = 'quinn') {
     try {
       const memoryClient = getMemoryClient(); // API key validated here
       const results = await memoryClient.search(query, { user_id: userId });
@@ -146,7 +146,7 @@ export default function({ config }: { config: { mem0ApiKey?: string } }) {
       
       switch (name) {
         case 'add-memory': {
-          const { content, userId = 'quinn_may' } = args as { content: string, userId?: string };
+          const { content, userId = 'quinn' } = args as { content: string, userId?: string };
           const success = await addMemory(content, userId);
           return {
             content: [
@@ -160,7 +160,7 @@ export default function({ config }: { config: { mem0ApiKey?: string } }) {
         }
         
         case 'search-memories': {
-          const { query, userId = 'quinn_may' } = args as { query: string, userId?: string };
+          const { query, userId = 'quinn' } = args as { query: string, userId?: string };
           const results = await searchMemories(query, userId);
           const formattedResults = results.map((result: any) => 
             `Memory: ${result.memory}\nRelevance: ${result.score}\n---`
