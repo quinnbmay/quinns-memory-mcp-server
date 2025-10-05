@@ -2,8 +2,10 @@
   "name": "@quinn/memory-mcp-server",
   "version": "0.0.1",
   "main": "dist/server.js",
-  "module": "./src/server.ts",
   "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
   "bin": {
     "memory-mcp": "dist/server.js"
   },
